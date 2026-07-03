@@ -1,0 +1,1058 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PyMICAPS 可视化配置终端</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.js"></script>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --secondary-color: #f1f5f9;
+            --bg-color: #f8fafc;
+            --panel-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-color: #0f172a;
+            --text-muted: #64748b;
+            --card-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        body { 
+            background-color: var(--bg-color); 
+            background-image: radial-gradient(#cbd5e1 1px, transparent 1px);
+            background-size: 24px 24px;
+            color: var(--text-color); 
+            font-family: 'Plus Jakarta Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif; 
+            -webkit-font-smoothing: antialiased;
+        }
+        h1, h2, h3, h4, h5, h6 { font-weight: 700; color: var(--text-color); letter-spacing: -0.02em; }
+        .text-muted { color: var(--text-muted) !important; }
+        .bg-light { background-color: var(--secondary-color) !important; }
+        .border-bottom, .border-end { border-color: var(--border-color) !important; }
+        
+        .config-container { 
+            height: calc(100vh - 240px); 
+            background: var(--panel-bg); 
+            border-radius: 0 0 16px 16px; 
+        }
+        .preview-container { 
+            background: var(--panel-bg); 
+            border-radius: 16px; 
+            box-shadow: var(--card-shadow); 
+            padding: 24px; 
+            height: calc(100vh - 120px); 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            position: sticky; 
+            top: 20px;
+            border: 1px solid var(--border-color);
+        }
+        .preview-image { 
+            max-width: 100%; 
+            max-height: 80%; 
+            object-fit: contain; 
+            cursor: zoom-in; 
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1); 
+            border: 1px solid var(--border-color);
+            background: #fff;
+        }
+        .preview-image:hover { transform: scale(1.02); box-shadow: 0 12px 24px rgba(0,0,0,0.12); }
+        
+        .xml-node { margin-bottom: 15px; }
+        .node-label { font-size: 0.85rem; font-weight: 600; color: var(--text-color); margin-bottom: 8px; display: block; }
+        .node-label small { font-weight: 500; color: var(--text-muted); margin-left: 6px; }
+        
+        .zoom-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.85); z-index: 10000; display: flex; align-items: center; justify-content: center; cursor: zoom-out; backdrop-filter: blur(8px); }
+        .zoom-modal img { max-width: 90%; max-height: 90%; border-radius: 8px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.1); background: #fff; }
+        
+        .card { 
+            border: 1px solid var(--border-color); 
+            border-radius: 16px; 
+            overflow: hidden; 
+            background: var(--panel-bg);
+            box-shadow: var(--card-shadow); 
+        }
+        .card-header { font-weight: 600; background-color: var(--panel-bg) !important; border-bottom: 1px solid var(--border-color); padding: 0; }
+        
+        .btn { border-radius: 8px; font-weight: 600; transition: var(--transition); border: 1px solid transparent; padding: 0.5rem 1rem; font-size: 0.9rem; }
+        .btn-primary { background-color: var(--primary-color); color: #fff; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2); }
+        .btn-primary:hover, .btn-primary:active { background-color: var(--primary-hover) !important; color: #fff !important; box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3); transform: translateY(-1px); }
+        .btn-outline-secondary { color: var(--text-muted); border-color: var(--border-color); background: #fff; }
+        .btn-outline-secondary:hover { background-color: var(--secondary-color); color: var(--text-color); border-color: #cbd5e1; transform: translateY(-1px); }
+        .btn-success { background-color: #10b981; color: #fff; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2); }
+        .btn-success:hover { background-color: #059669; color: #fff; box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3); transform: translateY(-1px); }
+        .btn-outline-primary { color: var(--primary-color); border-color: #bfdbfe; background: #eff6ff; }
+        .btn-outline-primary:hover { background: var(--primary-color); color: #fff; }
+        
+        .input-group-text { font-size: 0.85rem; background-color: var(--secondary-color); color: var(--text-muted); border-color: var(--border-color); font-weight: 500; }
+        .form-control, .form-select { 
+            background-color: #fff; 
+            border: 1px solid var(--border-color); 
+            color: var(--text-color); 
+            padding: 0.5rem 0.875rem; 
+            font-size: 0.9rem; 
+            border-radius: 8px;
+            transition: var(--transition);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.02);
+        }
+        .form-control:focus, .form-select:focus { 
+            background-color: #fff;
+            border-color: var(--primary-color); 
+            color: var(--text-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); 
+            outline: none;
+        }
+        .form-select option { background-color: #fff; color: var(--text-color); }
+        textarea.form-control { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; }
+        
+        .array-item { position: relative; padding: 16px; background: #f8fafc; border-radius: 12px; margin-bottom: 12px; border: 1px solid var(--border-color); transition: var(--transition); }
+        .array-item:hover { border-color: #bfdbfe; background: #eff6ff; box-shadow: 0 2px 8px rgba(37, 99, 235, 0.05); }
+        
+        .upload-zone { 
+            border: 2px dashed #cbd5e1; 
+            border-radius: 16px; 
+            padding: 32px 24px; 
+            text-align: center; 
+            background-color: #fff; 
+            transition: var(--transition); 
+            margin-bottom: 24px; 
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .upload-zone:hover { border-color: var(--primary-color); background-color: #eff6ff; }
+        .upload-zone.dragover { background-color: #eff6ff; border-color: var(--primary-color); transform: scale(1.01); }
+        .upload-zone i { color: var(--primary-color) !important; font-size: 2.5rem !important; margin-bottom: 12px; display: inline-block; }
+        
+        .file-info-card { font-size: 0.85rem; background: #f0fdf4; border-radius: 8px; padding: 12px 16px; margin-top: 16px; text-align: left; border: 1px solid #bbf7d0; color: #166534; }
+        
+        .nav-tabs { border-bottom: 1px solid var(--border-color); padding: 0 16px; background: #f8fafc; border-radius: 16px 16px 0 0; }
+        .nav-tabs .nav-link { color: var(--text-muted); border: none; font-weight: 600; padding: 16px 24px; position: relative; transition: var(--transition); }
+        .nav-tabs .nav-link:hover { color: var(--text-color); background: transparent; }
+        .nav-tabs .nav-link.active { color: var(--primary-color); background: transparent; }
+        .nav-tabs .nav-link.active::after { content: ''; position: absolute; bottom: 0; left: 0; right: 0; height: 3px; background: var(--primary-color); border-radius: 3px 3px 0 0; }
+        
+        .nav-pills .nav-link { border-radius: 8px; padding: 10px 16px; font-weight: 500; color: var(--text-muted); margin-bottom: 4px; transition: var(--transition); font-size: 0.9rem; text-align: left; }
+        .nav-pills .nav-link:hover { background-color: var(--secondary-color); color: var(--text-color); }
+        .nav-pills .nav-link.active { background-color: #eff6ff; color: var(--primary-color); font-weight: 600; }
+        
+        .form-group-box { background: #f8fafc; border-radius: 12px; padding: 20px; border: 1px solid var(--border-color); margin-bottom: 24px; }
+        .form-group-title { font-size: 1.1rem; font-weight: 700; color: var(--text-color); margin-bottom: 20px; display: flex; align-items: center; }
+        .form-group-title::before { content: ''; display: inline-block; width: 6px; height: 18px; background: var(--primary-color); border-radius: 4px; margin-right: 12px; }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .status-badge { padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; border: 1px solid #bbf7d0; color: #166534; background: #f0fdf4; }
+        
+        /* Loading animation */
+        .spinner-grow { background-color: var(--primary-color); }
+        .text-primary { color: var(--primary-color) !important; }
+        .badge.bg-secondary { background-color: var(--secondary-color) !important; border: 1px solid var(--border-color); color: var(--text-muted); font-weight: 500; }
+        .badge.bg-success { background-color: #10b981 !important; color: #fff; font-weight: 500; }
+        
+        /* 站点选择器样式 */
+        .station-picker-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.6); z-index: 1050; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
+        .station-picker-content { background: #fff; border-radius: 20px; width: 95%; max-width: 1000px; height: 85vh; display: flex; flex-direction: column; overflow: hidden; border: 1px solid var(--border-color); box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25); }
+        .station-list { flex-grow: 1; overflow-y: auto; padding: 24px; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; align-content: start; background: #f8fafc; }
+        .station-item { padding: 12px 16px; border: 1px solid var(--border-color); border-radius: 10px; cursor: pointer; transition: var(--transition); font-size: 0.85rem; display: flex; justify-content: space-between; align-items: center; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+        .station-item:hover { border-color: var(--primary-color); background: #eff6ff; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08); }
+        .station-item.active { background: var(--primary-color); color: #fff; border-color: var(--primary-color); box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
+        .station-item small { opacity: 0.8; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; }
+        .province-tabs { display: flex; flex-shrink: 0;overflow-x: auto; background: #fff; border-bottom: 1px solid var(--border-color); padding: 16px 24px 4px; gap: 8px; flex-wrap: nowrap; }
+        .province-tab { flex: 0 0 auto; min-width: max-content; padding: 10px 20px; cursor: pointer; border-bottom: 3px solid transparent; white-space: nowrap; font-size: 0.9rem; font-weight: 500; color: var(--text-muted); transition: var(--transition); border-radius: 8px 8px 0 0; }
+        .province-tab:hover { color: var(--text-color); background: #f8fafc; }
+        .province-tab.active { border-bottom-color: var(--primary-color); color: var(--primary-color); font-weight: 600; background: #eff6ff; }
+        .search-box { padding: 20px 24px; background: #fff; border-bottom: 1px solid var(--border-color); }
+        .station-picker-header { padding: 20px 24px; background: #fff; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+        .station-picker-footer { padding: 20px 24px; background: #fff; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; }
+    </style>
+</head>
+<body>
+    <div id="app" class="container-fluid py-4">
+        <header class="d-flex justify-content-between align-items-center mb-4 px-3">
+            <div>
+                <h1 class="h4 mb-0">PyMICAPS 可视化配置终端</h1>
+                <p class="text-muted mb-0"><small>气象数据可视化系统 - 后台配置与渲染中心</small></p>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-outline-secondary btn-sm" @click="resetConfig" :disabled="loading">重置配置</button>
+                <button class="btn btn-primary btn-sm px-4" @click="submitConfig" :disabled="loading">
+                    <span v-if="loading" class="spinner-border spinner-border-sm me-2"></span>
+                    {{ loading ? '正在渲染...' : '生成并渲染' }}
+                </button>
+            </div>
+        </header>
+
+        <div class="row g-4">
+            <!-- 左侧：配置编辑区 -->
+            <div class="col-lg-5 col-md-12">
+                <!-- 拖拽上传区 -->
+                <div class="upload-zone shadow-sm" 
+                     @dragover.prevent="dragover = true" 
+                     @dragleave.prevent="dragover = false" 
+                     @drop.prevent="handleDrop"
+                     @click="triggerFileInput"
+                     :class="{ 'dragover': dragover }">
+                    <i class="bi bi-cloud-arrow-up fs-3 text-primary"></i>
+                    <p class="mb-1 fw-bold fs-6">将 MICAPS 文件拖拽至此上传</p>
+                    <p class="text-muted small mb-0">或点击选择本地文件</p>
+                    <input type="file" ref="fileInput" class="d-none" @change="handleFileSelect">
+                    
+                    <div v-if="uploadInfo" class="file-info-card">
+                        <strong>已加载：</strong>{{ uploadInfo.filename }} | {{ formatSize(uploadInfo.size) }}<br>
+                        <span class="text-truncate d-inline-block w-100 align-bottom text-muted" :title="uploadInfo.header">{{ uploadInfo.header }}</span>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm">
+                    <div class="card-header bg-white p-0">
+                        <ul class="nav nav-tabs nav-fill">
+                            <li class="nav-item">
+                                <a class="nav-link" :class="{active: activeTab === 'visual'}" @click="activeTab = 'visual'" href="javascript:void(0)">参数分类配置</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" :class="{active: activeTab === 'raw'}" @click="activeTab = 'raw'" href="javascript:void(0)">原始 XML</a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="card-body p-0 config-container d-flex flex-column">
+                        <!-- 分类配置视图 -->
+                        <div v-if="activeTab === 'visual'" class="d-flex h-100 overflow-hidden">
+                            <!-- 左侧分类导航 -->
+                            <div class="nav flex-column nav-pills p-2 bg-light border-end" style="width: 140px; overflow-y: auto;" aria-orientation="vertical">
+                                <button v-for="cat in categories" :key="cat.id" 
+                                        class="nav-link text-start text-truncate" 
+                                        :class="{active: activeCategory === cat.id}" 
+                                        @click="activeCategory = cat.id"
+                                        :title="cat.name">
+                                    {{ cat.name }}
+                                </button>
+                            </div>
+                            <!-- 右侧表单区域 -->
+                            <div class="tab-content flex-grow-1 p-3 overflow-auto">
+                                <div v-if="configJson">
+                                    <template v-for="cat in categories" :key="cat.id">
+                                        <div v-show="activeCategory === cat.id">
+                                            <div class="form-group-title">{{ cat.name }}</div>
+                                            
+                                            <!-- 站点选择快捷入口：仅在“站点显示”分类下显示 -->
+                                            <div v-if="cat.id === 'stations'" class="alert alert-info d-flex align-items-center mb-3 py-2">
+                                                <i class="bi bi-info-circle me-2"></i>
+                                                <div class="small flex-grow-1">可以通过交互式站点选择器快速勾选多个站点。</div>
+                                                <button class="btn btn-primary btn-sm ms-3" @click="showStationPicker = true">
+                                                    <i class="bi bi-geo-alt me-1"></i>进入站点选择器
+                                                </button>
+                                            </div>
+
+                                            <config-node 
+                                                v-if="getNodeByPath(cat.path) !== undefined"
+                                                :name="cat.path[cat.path.length - 1]" 
+                                                :node="getNodeByPath(cat.path)" 
+                                                :path="cat.path" 
+                                                @update="handleUpdate"
+                                                @open-station-picker="showStationPicker = true">
+                                            </config-node>
+                                            <div v-else class="text-muted small">此配置节点不存在或未初始化</div>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 原始XML视图 -->
+                        <div v-else class="h-100 d-flex flex-column">
+                            <div class="p-2 bg-light border-bottom d-flex justify-content-between align-items-center">
+                                <small class="text-muted">直接编辑 XML 代码</small>
+                                <button class="btn btn-sm btn-outline-primary" @click="syncRawToVisual">同步到可视化界面</button>
+                            </div>
+                            <textarea class="form-control font-monospace flex-grow-1 border-0 p-3" v-model="rawXml" style="font-size: 0.85rem; resize: none;"></textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：图片预览区 -->
+            <div class="col-lg-7 col-md-12">
+                <div class="preview-container shadow-sm">
+                    <div v-if="!resultImage && !loading" class="text-center py-5">
+                        <div class="mb-3">
+                            <i class="bi bi-image text-muted" style="font-size: 4rem;"></i>
+                        </div>
+                        <h5 class="text-muted">等待生成结果图</h5>
+                        <p class="text-muted small">调整左侧配置后将自动渲染</p>
+                    </div>
+                    
+                    <div v-if="loading" class="text-center py-5">
+                        <div class="spinner-grow text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+                        <h5 class="text-primary">绘图引擎运行中...</h5>
+                        <p class="text-muted small">解析数据并生成高分辨率图件，请稍候</p>
+                    </div>
+
+                    <template v-if="resultImage && !loading">
+                        <div class="w-100 text-end mb-2">
+                            <span class="badge bg-success"><i class="bi bi-check-circle me-1"></i>渲染成功</span>
+                        </div>
+                        <img :src="'data:image/png;base64,' + resultImage" class="preview-image" @click="showZoom = true" title="点击放大查看">
+                        <div class="mt-4 d-flex gap-3">
+                            <a :href="'data:image/png;base64,' + resultImage" download="pymicaps_result.png" class="btn btn-success px-4">
+                                <i class="bi bi-download me-2"></i>下载高清图
+                            </a>
+                            <button class="btn btn-outline-primary" @click="showZoom = true">
+                                <i class="bi bi-arrows-fullscreen me-2"></i>全屏查看
+                            </button>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+
+        <!-- 缩放查看 -->
+        <div v-if="showZoom" class="zoom-modal" @click="showZoom = false">
+            <img :src="'data:image/png;base64,' + resultImage" @click.stop>
+            <div class="position-absolute top-0 end-0 p-4">
+                <button class="btn-close btn-close-white fs-4" aria-label="Close"></button>
+            </div>
+        </div>
+
+        <!-- 消息提示 -->
+        <div class="toast-container position-fixed bottom-0 end-0 p-3">
+            <div id="msgToast" class="toast align-items-center text-white border-0" :class="toastClass" role="alert">
+                <div class="d-flex">
+                    <div class="toast-body"><i class="bi bi-info-circle me-2"></i>{{ toastMsg }}</div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 站点选择器 Modal -->
+        <div v-if="showStationPicker" class="station-picker-modal" @click="showStationPicker = false">
+            <div class="station-picker-content shadow-lg" @click.stop>
+                <div class="station-picker-header">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-geo-alt-fill text-primary me-2"></i>站点多级筛选与搜索</h5>
+                    <button class="btn-close" @click="showStationPicker = false"></button>
+                </div>
+                
+                <div class="search-box">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0 text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control border-start-0" v-model="stationSearch" placeholder="搜索站点名称或编号 (支持模糊匹配)...">
+                    </div>
+                </div>
+
+                <div v-if="!stationSearch" class="province-tabs">
+                    <div v-for="(stations, province) in stationData" :key="province" 
+                         class="province-tab" :class="{ active: activeProvince === province }"
+                         @click="activeProvince = province">
+                        {{ province }} <small>({{ stations.length }})</small>
+                    </div>
+                </div>
+
+                <div class="p-3 bg-light border-bottom d-flex justify-content-between align-items-center" v-if="!stationSearch">
+                    <span class="text-muted small">当前省份: <strong class="text-dark">{{ activeProvince }}</strong></span>
+                    <button class="btn btn-outline-primary btn-sm" @click="toggleProvinceSelection">
+                        {{ isAllProvinceSelected ? '取消全选本省' : '全选当前省份' }}
+                    </button>
+                </div>
+
+                <div class="station-list">
+                    <div v-for="s in filteredStations" :key="s.id" 
+                         class="station-item" :class="{ active: isStationSelected(s) }"
+                         @click="toggleStation(s)">
+                        <span class="fw-medium">{{ s.name }}</span>
+                        <small>{{ s.id }}</small>
+                    </div>
+                </div>
+
+                <div class="station-picker-footer">
+                    <div class="text-muted small">
+                        <span class="badge bg-primary-subtle text-primary border border-primary-subtle rounded-pill px-3 py-2">
+                            已选择 <strong class="mx-1">{{ selectedStations.length }}</strong> 个站点
+                        </span>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-link text-muted text-decoration-none btn-sm" @click="selectedStations = []">清空选择</button>
+                        <button class="btn btn-primary px-4" @click="confirmStationSelection" :disabled="selectedStations.length === 0">
+                            <i class="bi bi-check2-circle me-1"></i>确认并更新配置
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 递归节点组件模板 -->
+    <script type="text/x-template" id="config-node-template">
+        <div class="xml-node w-100">
+            <!-- 处理对象（包含子节点） -->
+            <div v-if="isObject(node)">
+                <div v-for="(v, k) in node" :key="k" class="mb-2" v-if="shouldShowField(k, v)">
+                    <div v-if="Array.isArray(v)">
+                        <label class="node-label text-primary">{{ getLabel(k) }} <small class="text-muted">({{ k }}) [列表]</small></label>
+                        <div v-for="(item, index) in v" :key="index" class="array-item">
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="badge bg-secondary">项 #{{ index + 1 }}</span>
+                            </div>
+                            <config-node :name="k" :node="item" :path="[...path, k, index]" @update="onChildUpdate" :parent-node="node"></config-node>
+                        </div>
+                    </div>
+                    <div v-else>
+                        <template v-if="isObject(v)">
+                            <div class="form-group-box">
+                                <div class="node-label text-primary mb-2">{{ getLabel(k) }} <small class="text-muted">({{ k }})</small></div>
+                                <config-node :name="k" :node="v" :path="[...path, k]" @update="onChildUpdate" :parent-node="node"></config-node>
+                            </div>
+                        </template>
+                        <template v-else>
+                            <label class="node-label">{{ getLabel(k) }} <small class="text-muted" v-if="getLabel(k) !== k">({{ k }})</small></label>
+                            <config-node :name="k" :node="v" :path="[...path, k]" @update="onChildUpdate" :parent-node="node"></config-node>
+                        </template>
+                    </div>
+                </div>
+            </div>
+            <!-- 处理叶子节点（具体数值） -->
+            <div v-else>
+                <!-- 特殊选择项：投影、区域代码、数据类型 -->
+                <div v-if="hasOptions(name)" class="input-group input-group-sm">
+                    <select class="form-select form-select-sm" :value="node" @change="onInput($event.target.value)">
+                        <option v-for="opt in getOptions(name)" :key="opt.value" :value="opt.value">{{ opt.label }}</option>
+                    </select>
+                </div>
+                <!-- 颜色选择 -->
+                <div v-else-if="isColor(name)" class="input-group input-group-sm">
+                    <input type="color" class="form-control form-control-color" :value="node" @input="onInput($event.target.value)" style="max-width: 50px;" title="选择颜色">
+                    <input type="text" class="form-control" :value="node" @input="onInput($event.target.value)" placeholder="颜色值，如 #ff0000 或 red">
+                </div>
+                <!-- 布尔值选择 -->
+                <div v-else-if="isBoolean(node)" class="input-group input-group-sm">
+                    <select class="form-select form-select-sm" :value="node" @change="onInput($event.target.value)">
+                        <option v-for="opt in getBooleanOptions(node)" :value="opt">{{ opt }}</option>
+                    </select>
+                </div>
+                <!-- 路径选择 -->
+                <div v-else-if="isPath(name)" class="input-group input-group-sm">
+                    <input type="text" class="form-control form-control-sm" :value="node" @input="onInput($event.target.value)" placeholder="文件路径">
+                    <button v-if="name === 'File' && path.includes('Stations')" class="btn btn-outline-primary" type="button" @click="$emit('open-station-picker')"><i class="bi bi-geo-alt"></i> 站点选择</button>
+                    <button class="btn btn-outline-secondary" type="button" @click="browsePath(name)"><i class="bi bi-folder2-open"></i> 浏览</button>
+                </div>
+                <!-- 长文本 -->
+                <div v-else-if="isLongText(node)" class="input-group input-group-sm">
+                    <textarea class="form-control form-control-sm" :value="node" @input="onInput($event.target.value)" rows="2"></textarea>
+                </div>
+                <!-- 普通文本/数值 -->
+                <div v-else class="input-group input-group-sm">
+                    <input :type="isNumeric(node) ? 'text' : 'text'" class="form-control form-control-sm" :value="node" @input="onInput($event.target.value)">
+                </div>
+            </div>
+        </div>
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const { createApp, ref, onMounted, computed, watch } = Vue;
+
+        // 选项配置
+        const fieldOptions = {
+            'Name': [
+                { value: 'sall', label: 'sall (无投影)' },
+                { value: 'lcc', label: 'lcc (兰波托投影)' },
+                { value: 'mill', label: 'mill' },
+                { value: 'ortho', label: 'ortho' },
+                { value: 'stere', label: 'stere (极射赤面投影)' },
+                { value: 'npstere', label: 'npstere (北半球极射赤面投影)' },
+                { value: 'hammer', label: 'hammer' },
+                { value: 'kav7', label: 'kav7' },
+                { value: 'merc', label: 'merc (麦卡托投影)' },
+                { value: 'gnom', label: 'gnom' },
+                { value: 'cyl', label: 'cyl (等经纬度投影)' }
+            ],
+            'Code': [
+                { value: '110000', label: '110000 (北京市)' },
+                { value: '120000', label: '120000 (天津市)' },
+                { value: '130000', label: '130000 (河北省)' },
+                { value: '140000', label: '140000 (山西省)' },
+                { value: '150000', label: '150000 (内蒙古自治区)' },
+                { value: '210000', label: '210000 (辽宁省)' },
+                { value: '220000', label: '220000 (吉林省)' },
+                { value: '230000', label: '230000 (黑龙江省)' },
+                { value: '310000', label: '310000 (上海市)' },
+                { value: '320000', label: '320000 (江苏省)' },
+                { value: '330000', label: '330000 (浙江省)' },
+                { value: '340000', label: '340000 (安徽省)' },
+                { value: '350000', label: '350000 (福建省)' },
+                { value: '360000', label: '360000 (江西省)' },
+                { value: '370000', label: '370000 (山东省)' },
+                { value: '410000', label: '410000 (河南省)' },
+                { value: '420000', label: '420000 (湖北省)' },
+                { value: '430000', label: '430000 (湖南省)' },
+                { value: '440000', label: '440000 (广东省)' },
+                { value: '450000', label: '450000 (广西壮族自治区)' },
+                { value: '460000', label: '460000 (海南省)' },
+                { value: '500000', label: '500000 (重庆市)' },
+                { value: '510000', label: '510000 (四川省)' },
+                { value: '520000', label: '520000 (贵州省)' },
+                { value: '530000', label: '530000 (云南省)' },
+                { value: '540000', label: '540000 (西藏自治区)' },
+                { value: '610000', label: '610000 (陕西省)' },
+                { value: '620000', label: '620000 (甘肃省)' },
+                { value: '630000', label: '630000 (青海省)' },
+                { value: '640000', label: '640000 (宁夏回族自治区)' },
+                { value: '650000', label: '650000 (新疆维吾尔自治区)' },
+                { value: '710000', label: '710000 (台湾省)' },
+                { value: '810000', label: '810000 (香港特别行政区)' },
+                { value: '820000', label: '820000 (澳门特别行政区)' }
+            ],
+            'Type': [
+                 { value: 'M1', label: '站点数据' },
+                 { value: 'M4', label: '第4类格点数据' },
+                 { value: 'M11', label: '第11类UV数据' }
+             ]
+        };
+
+        // 字典：XML字段 -> 中文易读标签
+        const fieldLabels = {
+            'Name': '投影名称',
+            'Lon_0': '中心经度',
+            'Lat_0': '中心纬度',
+            'Lat_ts': '真比例纬度',
+            'BoundingLat': '极地边界纬度',
+            'LlcrnrLat': '左下角纬度',
+            'LlcrnrLon': '左下角经度',
+            'UrcrnrLat': '右上角纬度',
+            'UrcrnrLon': '右上角经度',
+            'Axis': '坐标轴',
+            'AxisThick': '粗细',
+            'AxisFmt': '格式',
+            'LatLabels': '纬度标签(左,上,右,下)',
+            'LonLabels': '经度标签(左,上,右,下)',
+            'Coastlines': '海岸线',
+            'Countries': '国界线',
+            'Lsmask': '海洋陆地配色',
+            'Visible': '显示',
+            'Land_color': '陆地颜色',
+            'Ocean_color': '海洋颜色',
+            'File': '文件路径',
+            'Type': '类型',
+            'LineWidth': '线宽',
+            'LineColor': '线色',
+            'Polygon': '多边形填充',
+            'Draw': '绘制',
+            'Code': '区域代码',
+            'Using': '启用',
+            'MarkStyle': '样式',
+            'Color': '颜色/填充颜色',
+            'EdgeColors': '边界颜色',
+            'Alpha': '透明度',
+            'Radius': '圆点半径',
+            'Font': '字体',
+            'Detax': '文字偏移',
+            'FileName': '数据文件名',
+            'LegendPic': '图例图片',
+            'Extend': '延展类型',
+            'MicapsLegendValue': '使用数据自带图例值',
+            'PinLegendValue': '固定图例值',
+            'MicapsLegendColor': '色标名称',
+            'Hatches': '图例填充样式',
+            'Thinning': '抽稀间隔',
+            'LegendValueAlias': '自定义图例值(别名)',
+            'LegendValue': '自定义图例阈值',
+            'LegendColor': '自定义图例颜色',
+            'TitleFont': '标题字体',
+            'TitlePos': '标题位置',
+            'Orientation': '方向',
+            'Anchor': '锚点',
+            'Shrink': '收缩系数',
+            'Fraction': '宽度占比',
+            'Location': '位置',
+            'Size': '尺寸',
+            'Pad': '间距/内边距',
+            'Scatter': '散点标注',
+            'Step': '等值线步长',
+            'Grid': '插值网格',
+            'ColorLine': '渐变着色',
+            'ContourfVisible': '色斑图',
+            'ContourLabel': '等值线标注',
+            'Fmt': '格式',
+            'FontSize': '字号',
+            'FontColor': '字体颜色',
+            'InlineSpacing': '开口间距',
+            'Stream': '流线',
+            'Density': '密度',
+            'OnSpeed': '随风速变色',
+            'OnColor': '彩色流线',
+            'BarbsGrid': '风杆网格',
+            'WholeClip': '完全裁切',
+            'Scale': '参考箭头尺寸',
+            'MarkScaleLength': '比例尺风速',
+            'Barbs': '风杆',
+            'Length': '长度',
+            'MTitlePosition': 'Micaps标题位置',
+            'Descs': '自定义描述文本集合',
+            'Desc': '描述文本',
+            'Text': '文本内容',
+            'Position': '位置(经,纬)',
+            'PicWidth': '宽度(英寸)',
+            'PicHeight': '高度(英寸)',
+            'Dpi': 'DPI',
+            'WidthShrink': '宽度收缩比例',
+            'Margin': '裁剪外延(左,上,右,下)',
+            'Extents': '绘图范围',
+            'Opacity': '透明度',
+            'PicFile': '输出文件路径',
+            'Projection': '投影配置',
+            'Borders': '边界文件集合',
+            'Border': '地图边界',
+            'ClipBorders': '裁剪边界集合',
+            'ClipBorder': '裁剪边界',
+            'Stations': '站点显示配置',
+            'MicapsFiles': 'Micaps数据集合',
+            'MicapsFile': 'Micaps数据文件',
+            'Legend': '图例配置',
+            'Contour': '等值线配置',
+            'UV': '风场配置',
+            'Title': '标题配置',
+            'Picture': '输出图像配置'
+        };
+
+        const ConfigNode = {
+            name: 'ConfigNode',
+            props: {
+                name: String,
+                node: [Object, Array, String, Number],
+                path: { type: Array, default: () => [] },
+                parentNode: { type: Object, default: () => ({}) }
+            },
+            template: '#config-node-template',
+            emits: ['update'],
+            methods: {
+                getLabel(key) {
+                    return fieldLabels[key] || key;
+                },
+                isObject(val) {
+                    return typeof val === 'object' && val !== null && !Array.isArray(val);
+                },
+                isColor(name) {
+                    return name.toLowerCase().includes('color');
+                },
+                isPath(name) {
+                    const n = name.toLowerCase();
+                    return n === 'file' || n === 'filename' || n === 'picfile' || n === 'legendpic';
+                },
+                isBoolean(val) {
+                    const v = String(val).toLowerCase();
+                    return ['on', 'off', 'onf', 'true', 'false', 'true1', 'false1'].includes(v);
+                },
+                getBooleanOptions(val) {
+                    const v = String(val).toLowerCase();
+                    const onGroup = ['on', 'off', 'onf'];
+                    const trueGroup = ['true', 'false', 'true1', 'false1'];
+                    if (onGroup.includes(v)) return ['on', 'off'];
+                    if (trueGroup.includes(v)) return ['True', 'False', 'True1', 'False1'];
+                    return [val];
+                },
+                isNumeric(val) {
+                    return !isNaN(parseFloat(val)) && isFinite(val);
+                },
+                isLongText(val) {
+                    return String(val).length > 50;
+                },
+                hasOptions(name) {
+                    // 更加精确地判断是否需要显示下拉框
+                    if (name === 'Name' && this.path.includes('Projection')) return true;
+                    if (name === 'Code' && this.path.includes('ClipBorder')) return true;
+                    if (name === 'Type' && this.path.includes('MicapsFile')) return true;
+                    return false;
+                },
+                getOptions(name) {
+                    return fieldOptions[name] || [];
+                },
+                shouldShowField(key, val) {
+                    return true;
+                },
+                onInput(value) {
+                    this.$emit('update', { path: this.path, value });
+                },
+                async browsePath(name) {
+                    try {
+                        const res = await fetch('/api/browse');
+                        const data = await res.json();
+                        if (data.path) {
+                            this.onInput(data.path);
+                        }
+                    } catch (e) {
+                        alert("无法调用文件选择器: " + e.message);
+                    }
+                },
+                onChildUpdate(data) {
+                    this.$emit('update', data);
+                }
+            }
+        };
+
+        createApp({
+            components: { ConfigNode },
+            setup() {
+                const activeTab = ref('visual');
+                const rawXml = ref('');
+                const configJson = ref(null);
+                const loading = ref(false);
+                const resultImage = ref(null);
+                const toastMsg = ref('');
+                const toastClass = ref('bg-danger');
+                const showZoom = ref(false);
+                const dragover = ref(false);
+                const uploadInfo = ref(null);
+                const fileInput = ref(null);
+
+                // 站点选择器相关
+                const showStationPicker = ref(false);
+                const stationData = ref({});
+                const activeProvince = ref('');
+                const stationSearch = ref('');
+                const selectedStations = ref([]);
+
+                const filteredStations = computed(() => {
+                    if (stationSearch.value) {
+                        const search = stationSearch.value.toLowerCase();
+                        const results = [];
+                        Object.values(stationData.value).forEach(list => {
+                            list.forEach(s => {
+                                if (s.name.toLowerCase().includes(search) || s.id.includes(search)) {
+                                    results.push(s);
+                                }
+                            });
+                        });
+                        return results;
+                    }
+                    return stationData.value[activeProvince.value] || [];
+                });
+
+                const isAllProvinceSelected = computed(() => {
+                    const currentProvinceStations = stationData.value[activeProvince.value] || [];
+                    if (currentProvinceStations.length === 0) return false;
+                    return currentProvinceStations.every(s => isStationSelected(s));
+                });
+
+                const toggleProvinceSelection = () => {
+                    const currentProvinceStations = stationData.value[activeProvince.value] || [];
+                    if (isAllProvinceSelected.value) {
+                        // 取消全选：移除当前省份的所有站点
+                        const idsToRemove = currentProvinceStations.map(s => s.id);
+                        selectedStations.value = selectedStations.value.filter(s => !idsToRemove.includes(s.id));
+                    } else {
+                        // 全选：添加当前省份未选中的站点
+                        currentProvinceStations.forEach(s => {
+                            if (!isStationSelected(s)) {
+                                selectedStations.value.push(s);
+                            }
+                        });
+                    }
+                };
+
+                const isStationSelected = (station) => {
+                    return selectedStations.value.some(s => s.id === station.id);
+                };
+
+                const toggleStation = (station) => {
+                    const index = selectedStations.value.findIndex(s => s.id === station.id);
+                    if (index === -1) {
+                        selectedStations.value.push(station);
+                    } else {
+                        selectedStations.value.splice(index, 1);
+                    }
+                };
+
+                const fetchStations = async () => {
+                    try {
+                        const res = await fetch('/api/stations');
+                        if (!res.ok) throw new Error("无法获取站点数据");
+                        const data = await res.json();
+                        stationData.value = data;
+                        if (Object.keys(data).length > 0) {
+                            activeProvince.value = Object.keys(data)[0];
+                        }
+                    } catch (e) {
+                        console.error("加载站点失败:", e);
+                    }
+                };
+
+                const confirmStationSelection = async () => {
+                    try {
+                        const res = await fetch('/api/save_stations', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ stations: selectedStations.value })
+                        });
+                        const data = await res.json();
+                        if (data.status === 'success') {
+                            // 更新配置中的站点文件路径
+                            // 我们需要找到 Map/Stations/File 路径
+                            handleUpdate({
+                                path: ['Map', 'Stations', 'File'],
+                                value: data.path
+                            });
+                            showStationPicker.value = false;
+                            showToast("站点配置已更新并自动保存", "success");
+                        } else {
+                            showToast("保存站点失败: " + data.error, "danger");
+                        }
+                    } catch (e) {
+                        showToast("请求异常: " + e.message, "danger");
+                    }
+                };
+                
+                // 新增：分类导航控制
+                const activeCategory = ref('projection');
+                const categories = [
+                    { id: 'projection', name: '地图投影', path: ['Map', 'Projection'] },
+                    { id: 'borders', name: '地图边界', path: ['Map', 'Borders'] },
+                    { id: 'clipborders', name: '裁剪边界', path: ['Map', 'ClipBorders'] },
+                    { id: 'stations', name: '站点显示', path: ['Map', 'Stations'] },
+                    { id: 'micaps', name: 'Micaps 数据', path: ['MicapsFiles'] },
+                    { id: 'picture', name: '输出图像', path: ['Picture'] }
+                ];
+
+                let renderTimeout = null;
+
+                // 安全获取嵌套属性
+                const getNodeByPath = (pathArray) => {
+                    if (!configJson.value) return undefined;
+                    let current = configJson.value;
+                    for (const p of pathArray) {
+                        if (current[p] === undefined) return undefined;
+                        current = current[p];
+                    }
+                    return current;
+                };
+
+                const validateConfig = () => {
+                    if (!configJson.value) return true;
+                    try {
+                        const mFiles = configJson.value.MicapsFiles;
+                        if (!mFiles || !mFiles.MicapsFile) {
+                            showToast("配置校验失败: 缺少 Micaps 数据配置节点", "danger");
+                            return false;
+                        }
+                    } catch(e) {}
+                    return true;
+                };
+
+                const triggerFileInput = () => {
+                    fileInput.value.click();
+                };
+
+                const handleFileSelect = (e) => {
+                    if (e.target.files.length > 0) {
+                        uploadFile(e.target.files[0]);
+                    }
+                };
+
+                const handleDrop = (e) => {
+                    dragover.value = false;
+                    if (e.dataTransfer.files.length > 0) {
+                        uploadFile(e.dataTransfer.files[0]);
+                    }
+                };
+
+                const uploadFile = async (file) => {
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    try {
+                        showToast("正在上传文件...", "info");
+                        const res = await fetch('/api/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+                        const data = await res.json();
+                        if (data.status === 'success') {
+                            uploadInfo.value = data;
+                            showToast("文件加载成功", "success");
+                            
+                            // 自动回填至配置文件第一个 MicapsFile 节点
+                            if (configJson.value && configJson.value.MicapsFiles && configJson.value.MicapsFiles.MicapsFile) {
+                                let mFile = configJson.value.MicapsFiles.MicapsFile;
+                                if (Array.isArray(mFile)) mFile = mFile[0];
+                                if (mFile.File && mFile.File.FileName !== undefined) {
+                                    mFile.File.FileName = data.path;
+                                    rawXml.value = jsonToXml(configJson.value);
+                                    // 自动跳转到Micaps数据配置卡片
+                                    activeCategory.value = 'micaps';
+                                    autoRender();
+                                }
+                            }
+                        } else {
+                            showToast("上传失败: " + data.error, "danger");
+                        }
+                    } catch (e) {
+                        showToast("上传异常: " + e.message, "danger");
+                    }
+                };
+
+                const formatSize = (bytes) => {
+                    if (bytes === 0) return '0 B';
+                    const k = 1024;
+                    const sizes = ['B', 'KB', 'MB', 'GB'];
+                    const i = Math.floor(Math.log(bytes) / Math.log(k));
+                    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+                };
+
+                const fetchConfig = async () => {
+                    try {
+                        const res = await fetch('/api/config');
+                        if (!res.ok) throw new Error("服务器响应异常");
+                        const data = await res.json();
+                        if (data.xml) {
+                            rawXml.value = data.xml;
+                            parseXmlToJson(data.xml);
+                        }
+                    } catch (e) {
+                        showToast("获取配置失败: " + e.message, 'danger');
+                    }
+                };
+
+                const parseXmlToJson = (xmlStr) => {
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(xmlStr, "text/xml");
+                    
+                    const elementToJson = (el) => {
+                        const children = el.children;
+                        if (children.length === 0) return el.textContent.trim();
+                        const obj = {};
+                        for (let child of children) {
+                            const val = elementToJson(child);
+                            if (obj[child.tagName]) {
+                                if (!Array.isArray(obj[child.tagName])) {
+                                    obj[child.tagName] = [obj[child.tagName]];
+                                }
+                                obj[child.tagName].push(val);
+                            } else {
+                                obj[child.tagName] = val;
+                            }
+                        }
+                        return obj;
+                    };
+                    
+                    configJson.value = elementToJson(xmlDoc.documentElement);
+                };
+
+                const jsonToXml = (json, rootName = 'Product') => {
+                    let xml = `<?xml version="1.0" encoding="utf-8"?>\n<${rootName}>`;
+                    
+                    const build = (obj) => {
+                        let inner = '';
+                        for (let key in obj) {
+                            const val = obj[key];
+                            if (Array.isArray(val)) {
+                                val.forEach(v => {
+                                    inner += `\n<${key}>${typeof v === 'object' ? build(v) : v}</${key}>`;
+                                });
+                            } else if (typeof val === 'object' && val !== null) {
+                                inner += `\n<${key}>${build(val)}</${key}>`;
+                            } else {
+                                inner += `\n<${key}>${val}</${key}>`;
+                            }
+                        }
+                        return inner;
+                    };
+                    
+                    xml += build(json);
+                    xml += `\n</${rootName}>`;
+                    return xml;
+                };
+
+                const handleUpdate = ({ path, value }) => {
+                    let current = configJson.value;
+                    for (let i = 0; i < path.length - 1; i++) {
+                        current = current[path[i]];
+                    }
+                    current[path[path.length - 1]] = value;
+                    rawXml.value = jsonToXml(configJson.value);
+                    autoRender();
+                };
+
+                const autoRender = () => {
+                    if (renderTimeout) clearTimeout(renderTimeout);
+                    renderTimeout = setTimeout(() => {
+                        submitConfig();
+                    }, 1000); // 1000ms 防抖
+                };
+
+                const syncRawToVisual = () => {
+                    try {
+                        parseXmlToJson(rawXml.value);
+                        showToast("已从 XML 同步到可视化界面", 'success');
+                        activeTab.value = 'visual';
+                        autoRender();
+                    } catch (e) {
+                        showToast("XML 解析错误，无法同步: " + e.message, 'danger');
+                    }
+                };
+
+                const submitConfig = async () => {
+                    if (!validateConfig()) return;
+                    loading.value = true;
+                    try {
+                        const res = await fetch('/api/render', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ xml: rawXml.value })
+                        });
+                        const data = await res.json();
+                        if (data.status === 'success') {
+                            resultImage.value = data.image;
+                            showToast("渲染完成！", 'success');
+                        } else {
+                            showToast("渲染失败: " + (data.error || "未知错误"), 'danger');
+                        }
+                    } catch (e) {
+                        showToast("提交请求失败: " + e.message, 'danger');
+                    } finally {
+                        loading.value = false;
+                    }
+                };
+
+                const resetConfig = () => {
+                    if (confirm("确定要放弃当前修改并从服务器重新加载配置吗？")) {
+                        fetchConfig();
+                        resultImage.value = null;
+                        showToast("配置已重置", 'info');
+                    }
+                };
+
+                const showToast = (msg, type = 'danger') => {
+                    toastMsg.value = msg;
+                    toastClass.value = 'bg-' + type;
+                    const toastEl = document.getElementById('msgToast');
+                    const toast = new bootstrap.Toast(toastEl);
+                    toast.show();
+                };
+
+                onMounted(() => {
+                    fetchConfig();
+                    fetchStations();
+                });
+
+                return {
+                    activeTab, rawXml, configJson, loading, resultImage, 
+                    toastMsg, toastClass, showZoom, handleUpdate, submitConfig, resetConfig,
+                    syncRawToVisual,
+                    dragover, uploadInfo, fileInput, handleDrop, triggerFileInput, handleFileSelect, formatSize,
+                    activeCategory, categories, getNodeByPath,
+                    showStationPicker, stationData, activeProvince, stationSearch, selectedStations,
+                    filteredStations, isStationSelected, toggleStation, confirmStationSelection,
+                    isAllProvinceSelected, toggleProvinceSelection
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>

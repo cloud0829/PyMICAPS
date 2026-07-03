@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Product>
+<Map>
+<Projection>
+<Name>lcc</Name>
+<Lon_0>116.</Lon_0>
+<Lat_0>30.</Lat_0>
+<Lat_ts>90.</Lat_ts>
+<BoundingLat>45</BoundingLat>
+<LlcrnrLat>11.</LlcrnrLat>
+<LlcrnrLon>82.37</LlcrnrLon>
+<UrcrnrLat>50.5</UrcrnrLat>
+<UrcrnrLon>147.38</UrcrnrLon>
+<Axis>onf</Axis>
+<AxisThick>1</AxisThick>
+<AxisFmt>"%d°E","%d°N"</AxisFmt>
+<LatLabels>0,0,0,0</LatLabels>
+<LonLabels>0,0,0,0</LonLabels>
+<Coastlines>on</Coastlines>
+<Countries>on</Countries>
+<Lsmask>
+<Visible>on</Visible>
+<Land_color>#ddaa66</Land_color>
+<Ocean_color>#7777ff</Ocean_color></Lsmask></Projection>
+<Borders>
+<Border>
+<File>.\shapefile\bou2_4l.shp</File>
+<Type>shp</Type>
+<LineWidth>1</LineWidth>
+<LineColor>k</LineColor>
+<Polygon>off</Polygon>
+<Draw>on</Draw></Border></Borders>
+<ClipBorders>
+<ClipBorder>
+<File>.\shapefile\bou2_4p</File>
+<Type>shp</Type>
+<Code>630000</Code>
+<Using>onf</Using>
+<Draw>on</Draw>
+<LineWidth>2</LineWidth>
+<LineColor>#df0029</LineColor></ClipBorder></ClipBorders>
+<Stations>
+<File>D:\Desktop\PyMICAPS-master\PyMICAPS-master\uploads\selected_stations.txt</File>
+<Visible>on</Visible>
+<MarkStyle>'o','full'</MarkStyle>
+<Color>r</Color>
+<EdgeColors>k</EdgeColors>
+<Alpha>0.75</Alpha>
+<Radius>30</Radius>
+<Font>12,'simsun.ttc','bold','k'</Font>
+<Detax>0.015</Detax></Stations></Map>
+<MicapsFiles>
+<MicapsFile>
+<File>
+<Type>M4</Type>
+<FileName>D:\Desktop\PyMICAPS-master\PyMICAPS-master\SampleData\17041020.000</FileName></File>
+<Legend>
+<LegendPic></LegendPic>
+<Extend>neither</Extend>
+<MicapsLegendValue>True</MicapsLegendValue>
+<PinLegendValue></PinLegendValue>
+<MicapsLegendColor>ncl_default</MicapsLegendColor>
+<Hatches></Hatches>
+<Thinning>1</Thinning>
+<LegendValueAlias>'',-30, -28, -26, -24, -22,
+                    -20,-18,-16,-14,-12,-10,-8,-6,-4,-2,0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,35,37,40,''</LegendValueAlias>
+<LegendValue>-999999,-30, -28, -26, -24, -22,
+                    -20,-18,-16,-14,-12,-10,-8,-6,-4,-2,0,2,4,6,8,10,12,14,16,18,20,22,24,26,28,30,32,34,35,37,40,999999</LegendValue>
+<LegendColor>'#020c64', '#071e78', '#11318b', '#1b449f', '#2657b3',
+                    '#306ac7','#3b7ddb','#4e8add','#6196e0', '#74a3e2','#87afe5','#87afe5','#9ac4dc',
+                    '#9acdd0','#98d6c4','#97e8ad','#d7de7d', '#eadb70','#f4d963','#facc4f','#f7b42d',
+                    '#f29b00','#f19303','#f0850a','#ef7511','#ee6518','#ee581f','#e74b1a','#e03f16','#d93312','#d0240e','#c20003','#b50109','#a90210','#8a0519','#6f0015','#50000f','none'</LegendColor>
+<Font>{'family': 'msyhbd.ttc', 'color': 'k', 'weight': 'normal', 'size': 10}</Font>
+<Title>雨量:mm</Title>
+<TitleFont>{'family': 'msyhbd.ttc', 'color': 'k', 'weight': 'normal', 'size': 12}</TitleFont>
+<TitlePos>{'rotation': 0, 'va': 'center', 'ha': 'right', 'ypercent': 1.1}</TitlePos>
+<Orientation>vertical</Orientation>
+<Anchor>0.5, 0.15</Anchor>
+<Shrink>0.38</Shrink>
+<Fraction>0.025</Fraction>
+<Location>bottom</Location>
+<Size>3%</Size>
+<Pad>5%</Pad></Legend>
+<Contour>
+<Scatter>onf</Scatter>
+<Alpha>0.5</Alpha>
+<Radius>10</Radius>
+<Step>2.</Step>
+<Grid>195,216</Grid>
+<Contour>
+<Visible>True1</Visible>
+<LineWidth>1</LineWidth>
+<LineColor>k</LineColor>
+<ColorLine>True1</ColorLine></Contour>
+<ContourfVisible>True</ContourfVisible>
+<ContourLabel>
+<Visible>True</Visible>
+<Fmt>%1.0f</Fmt>
+<FontSize>12</FontSize>
+<FontColor>k</FontColor>
+<InlineSpacing>0</InlineSpacing></ContourLabel></Contour>
+<UV>
+<Stream>on</Stream>
+<Density>5, 5</Density>
+<Color>k</Color>
+<OnSpeed>off</OnSpeed>
+<OnColor>off</OnColor>
+<BarbsGrid>31, 31</BarbsGrid>
+<WholeClip>on</WholeClip>
+<Scale>500</Scale>
+<MarkScaleLength>12</MarkScaleLength>
+<Barbs>onf</Barbs>
+<Length>5</Length></UV>
+<Title>
+<MTitlePosition>0,0</MTitlePosition>
+<Descs>
+<Desc>
+<Text>北京市降水量分布图(单位 : 毫米)</Text>
+<Position>115.37,41.126</Position>
+<Font>26,msyhbd.ttc,bold,black</Font></Desc>
+<Desc>
+<Text>2016年09月25日21时-26日08时</Text>
+<Position>115.45,41.04</Position>
+<Font>20,msyhbd.ttc,bold,black</Font></Desc>
+<Desc>
+<Text>北京市气象台</Text>
+<Position>115.68,40.97</Position>
+<Font>20,msyhbd.ttc,bold,black</Font></Desc></Descs></Title></MicapsFile></MicapsFiles>
+<Picture>
+<PicWidth>10</PicWidth>
+<PicHeight>12</PicHeight>
+<Dpi>72</Dpi>
+<WidthShrink>0.8</WidthShrink>
+<Margin>0.05, 0.05, 0.2, 0.05</Margin>
+<Pad>1.5</Pad>
+<Extents></Extents>
+<Opacity>1</Opacity>
+<PicFile>C:\Pic\17032520.001.png</PicFile></Picture>
+</Product>
